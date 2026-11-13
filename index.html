@@ -1,0 +1,1603 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>員工人事考績評等預測互動分析平台｜銘傳大學公共事務與行政管理學系 劉祥得 製作</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!-- Google Fonts: Noto Sans TC & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #f1f5f9;
+      color: #0f172a;
+    }
+    /* Custom Range Slider Styling */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 6px;
+      border-radius: 999px;
+      background: #cbd5e1;
+      outline: none;
+      transition: background 0.15s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #0d9488;
+      border: 2px solid #ffffff;
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.25);
+      cursor: pointer;
+      transition: transform 0.12s ease, background-color 0.12s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+      background: #0f766e;
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #0d9488;
+      border: 2px solid #ffffff;
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.25);
+      cursor: pointer;
+    }
+    .tab-btn {
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .tab-panel {
+      animation: fadeIn 0.28s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    /* Hide scrollbar for horizontal tab bar on mobile */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-teal-600 selection:text-white">
+
+  <!-- Toast Notification (Non-blocking replacement for alert) -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 pointer-events-none opacity-0 translate-y-3 transition-all duration-300">
+    <div class="bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl border border-teal-500/40 flex items-center gap-3 text-sm font-medium">
+      <span class="w-2.5 h-2.5 rounded-full bg-teal-400 animate-pulse"></span>
+      <span id="toast-msg">已載入員工資料並更新預測結果</span>
+    </div>
+  </div>
+
+  <!-- Top Executive Academic Header -->
+  <header class="bg-gradient-to-r from-slate-900 via-teal-950 to-slate-900 text-white shadow-lg border-b border-teal-800/50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div class="space-y-1.5">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/15 border border-teal-400/30 text-teal-200 text-xs sm:text-sm font-semibold tracking-wide">
+            <svg class="w-4 h-4 text-teal-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+            <span>銘傳大學公共事務與行政管理學系 劉祥得 製作</span>
+          </div>
+          <h1 class="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight text-white leading-snug">
+            員工人事考績評等預測互動分析平台（統計方法 × 機器學習）
+          </h1>
+          <p class="text-slate-300 text-xs sm:text-sm max-w-3xl">
+            整合順序邏輯斯迴歸（Ordered Logit）與多項機器學習分類器（N = 150 實證建模，5-Fold 分層交叉驗證準確率 72.7%、±1 等第命中率 100%）
+          </p>
+        </div>
+
+        <!-- Author & Methodology Pill Card -->
+        <div class="bg-white/10 backdrop-blur-sm border border-white/15 rounded-2xl px-4 py-3 shrink-0 flex flex-col justify-center">
+          <div class="text-xs text-teal-300 font-semibold uppercase tracking-wider">研究設計與系統建置</div>
+          <div class="text-sm sm:text-base font-bold text-white mt-0.5">銘傳大學公共事務與行政管理學系</div>
+          <div class="text-sm font-semibold text-amber-300">劉祥得 製作</div>
+        </div>
+      </div>
+
+      <!-- 4 Interactive Navigation Tabs -->
+      <nav aria-label="主要分析功能分頁" class="mt-5 -mb-5 sm:-mb-6 flex overflow-x-auto no-scrollbar gap-1.5 sm:gap-2 pt-1">
+        <button onclick="switchTab('simulator')" id="tab-btn-simulator"
+          class="tab-btn active-tab whitespace-nowrap px-4 py-3 rounded-t-xl text-xs sm:text-sm font-bold bg-slate-100 text-slate-900 shadow-sm border-t-2 border-teal-400">
+          🎛️ 即時考績預測模擬器 (What-If)
+        </button>
+        <button onclick="switchTab('benchmark')" id="tab-btn-benchmark"
+          class="tab-btn whitespace-nowrap px-4 py-3 rounded-t-xl text-xs sm:text-sm font-semibold bg-white/10 text-slate-200 hover:bg-white/20 hover:text-white">
+          📊 統計 vs. 機器學習模型效能
+        </button>
+        <button onclick="switchTab('drivers')" id="tab-btn-drivers"
+          class="tab-btn whitespace-nowrap px-4 py-3 rounded-t-xl text-xs sm:text-sm font-semibold bg-white/10 text-slate-200 hover:bg-white/20 hover:text-white">
+          🧬 關鍵影響因子與迴歸檢定
+        </button>
+        <button onclick="switchTab('cases')" id="tab-btn-cases"
+          class="tab-btn whitespace-nowrap px-4 py-3 rounded-t-xl text-xs sm:text-sm font-semibold bg-white/10 text-slate-200 hover:bg-white/20 hover:text-white">
+          📋 典型員工案例與人資預警分類
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+
+    <!-- ===================================================================== -->
+    <!-- TAB 1: REAL-TIME WHAT-IF SIMULATOR                                    -->
+    <!-- ===================================================================== -->
+    <section id="panel-simulator" class="tab-panel space-y-6">
+
+      <!-- Quick Scenario Presets & Employee Loader Bar -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-4 sm:p-5">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <h2 class="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+              <span class="w-2 h-6 rounded-full bg-teal-600 inline-block"></span>
+              情境模擬快速載入與參數設定
+            </h2>
+            <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
+              拖曳下方滑桿調整員工日常出勤、獎懲與職能指標，右側即時同步計算統計模型與機器學習預測機率。
+            </p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button onclick="applyPreset('star')"
+              class="px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition cursor-pointer">
+              🌟 優等楷模範例
+            </button>
+            <button onclick="applyPreset('core')"
+              class="px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition cursor-pointer">
+              💼 中堅骨幹範例
+            </button>
+            <button onclick="applyPreset('risk')"
+              class="px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition cursor-pointer">
+              ⚠️ 高風險預警範例
+            </button>
+            <button onclick="applyPreset('mean')"
+              class="px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 transition cursor-pointer">
+              ↺ 全體平均基準
+            </button>
+          </div>
+        </div>
+
+        <!-- Sample Employee Dropdown Loader -->
+        <div class="mt-4 pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center gap-3">
+          <label for="quick-emp-select" class="text-xs sm:text-sm font-semibold text-slate-700 shrink-0">
+            🔍 快速載入模擬員工檔案：
+          </label>
+          <select id="quick-emp-select" onchange="loadEmployeeById(this.value)"
+            class="w-full sm:max-w-md rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs sm:text-sm text-slate-800 focus:border-teal-600 focus:bg-white focus:outline-none">
+            <option value="">-- 請選擇代表性員工個案（含四類人資預警群組） --</option>
+          </select>
+          <span id="loaded-emp-badge" class="hidden text-xs font-semibold px-3 py-1 rounded-full bg-teal-50 text-teal-800 border border-teal-200"></span>
+        </div>
+      </div>
+
+      <!-- Two-Column Simulator Layout -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+        <!-- Left Column (7 cols): Interactive Predictors -->
+        <div class="lg:col-span-7 space-y-5">
+
+          <!-- Group 1: Attendance & Discipline Red-Lines -->
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded-md bg-rose-100 text-rose-700 text-xs font-bold">第一構面</span>
+                勤惰紀律與出勤狀況（底線否決門檻）
+              </h3>
+              <span class="text-xs text-slate-400">5 項指標</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+              <!-- 曠職天數 (idx 10) -->
+              <div class="bg-slate-50/80 p-3 rounded-xl border border-slate-200/70">
+                <div class="flex justify-between items-center text-xs sm:text-sm mb-1.5">
+                  <label for="in-absent" class="font-semibold text-slate-800">曠職天數 <span class="text-rose-600 font-normal">(紅線指標)</span></label>
+                  <span id="val-absent" class="font-bold text-teal-700 bg-white px-2 py-0.5 rounded-md border border-slate-200">0 天</span>
+                </div>
+                <input id="in-absent" type="range" min="0" max="3" step="1" value="0" oninput="runPrediction()" class="w-full" />
+                <div class="flex justify-between text-[11px] text-slate-400 mt-1"><span>0 天</span><span>1 天</span><span>2 天</span><span>3 天</span></div>
+              </div>
+
+              <!-- 遲到早退次數 (idx 11) -->
+              <div class="bg-slate-50/80 p-3 rounded-xl border border-slate-200/70">
+                <div class="flex justify-between items-center text-xs sm:text-sm mb-1.5">
+                  <label for="in-late" class="font-semibold text-slate-800">遲到早退次數</label>
+                  <span id="val-late" class="font-bold text-teal-700 bg-white px-2 py-0.5 rounded-md border border-slate-200">2 次</span>
+                </div>
+                <input id="in-late" type="range" min="0" max="15" step="1" value="2" oninput="runPrediction()" class="w-full" />
+                <div class="flex justify-between text-[11px] text-slate-400 mt-1"><span>0 次</span><span>7 次</span><span>15 次</span></div>
+              </div>
+
+              <!-- 病假天數 (idx 12) -->
+              <div class="bg-slate-50/80 p-3 rounded-xl border border-slate-200/70">
+                <div class="flex justify-between items-center text-xs sm:text-sm mb-1.5">
+                  <label for="in-sick" class="font-semibold text-slate-800">病假天數</label>
+                  <span id="val-sick" class="font-bold text-teal-700 bg-white px-2 py-0.5 rounded-md border border-slate-200">2 天</span>
+                </div>
+                <input id="in-sick" type="range" min="0" max="12" step="1" value="2" oninput="runPrediction()" class="w-full" />
+                <div class="flex justify-between text-[11px] text-slate-400 mt-1"><span>0 天</span><span>6 天</span><span>12 天</span></div>
+              </div>
+
+              <!-- 事假天數 (idx 13) -->
+              <div class="bg-slate-50/80 p-3 rounded-xl border border-slate-200/70">
+                <div class="flex justify-between items-center text-xs sm:text-sm mb-1.5">
+                  <label for="in-personal" class="font-semibold text-slate-800">事假天數</label>
+                  <span id="val-personal" class="font-bold text-teal-700 bg-white px-2 py-0.5 rounded-md border border-slate-200">1 天</span>
+                </div>
+                <input id="in-personal" type="range" min="0" max="8" step="1" value="1" oninput="runPrediction()" class="w-full" />
+                <div class="flex justify-between text-[11px] text-slate-400 mt-1"><span>0 天</span><span>4 天</span><span>8 天</span></div>
+              </div>
+
+              <!-- 年度加班時數 (idx 14) -->
+              <div class="sm:col-span-2 bg-slate-50/80 p-3 rounded-xl border border-slate-200/70">
+                <div class="flex justify-between items-center text-xs sm:text-sm mb-1.5">
+                  <label for="in-overtime" class="font-semibold text-slate-800">年度加班時數</label>
+                  <span id="val-overtime" class="font-bold text-teal-700 bg-white px-2 py-0.5 rounded-md border border-slate-200">27 小時</span>
+                </div>
+                <input id="in-overtime" type="range" min="0" max="120" step="1" value="27" oninput="runPrediction()" class="w-full" />
+                <div class="flex justify-between text-[11px] text-slate-400 mt-1"><span>0 小時</span><span>60 小時</span><span>120 小時</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Group 2: Rewards, Training & Certifications -->
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-xs font-bold">第二構面</span>
+                獎懲表現、專業證照與教育訓練（正向拔擢增益）
+              </h3>
+              <span class="text-xs text-slate-400">4 項指標</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+              <!-- 獎懲淨積分 (idx 9) -->
+              <div class="bg-slate-50/80 p-3 rounded-xl border border-slate-200/70">
+                <div class="flex justify-between items-center text-xs sm:text-sm mb-1.5">
+                  <label for="in-reward" class="font-semibold text-slate-800">獎懲淨積分 <span class="text-emerald-700 font-normal">(最強正因子)</span></label>
+                  <span id="val-reward" class="font-bold text-teal-700 bg-white px-2 py-0.5 rounded-md border border-slate-200">+1 分</span>
+                </div>
+                <input id="in-reward" type="range" min="-4" max="10" step="1" value="1" oninput="runPrediction()" class="w-full" />
+                <div class="flex justify-between text-[11px] text-slate-400 mt-1"><span>-4 分</span><span>+3 分</span><span>+10 分</span></div>
+              </div>
+
+              <!-- 持有證照數 (idx 6) -->
+              <div class="bg-slate-50/80 p-3 rounded-xl border border-slate-200/70">
+                <div class="flex justify-between items-center text-xs sm:text-sm mb-1.5">
+                  <label for="in-certs" class="font-semibold text-slate-800">持有專業證照數</label>
+                  <span id="val-certs" class="font-bold text-teal-700 bg-white px-2 py-0.5 rounded-md border border-slate-200">2 張</span>
+                </div>
+                <input id="in-certs" type="range" min="0" max="5" step="1" value="2" oninput="runPrediction()" class="w-full" />
+                <div class="flex justify-between text-[11px] text-slate-400 mt-1"><span>0 張</span><span>2 張</span><span>5 張</span></div>
+              </div>
+
+              <!-- 年度總訓練時數 (idx 7) -->
+              <div class="bg-slate-50/80 p-3 rounded-xl border border-slate-200/70">
+                <div class="flex justify-between items-center text-xs sm:text-sm mb-1.5">
+                  <label for="in-train-hrs" class="font-semibold text-slate-800">年度總訓練時數</label>
+                  <span id="val-train-hrs" class="font-bold text-teal-700 bg-white px-2 py-0.5 rounded-md border border-slate-200">38 小時</span>
+                </div>
+                <input id="in-train-hrs" type="range" min="10" max="80" step="1" value="38" oninput="runPrediction()" class="w-full" />
+                <div class="flex justify-between text-[11px] text-slate-400 mt-1"><span>10 小時</span><span>45 小時</span><span>80 小時</span></div>
+              </div>
+
+              <!-- 訓練測驗均分 (idx 8) -->
+              <div class="bg-slate-50/80 p-3 rounded-xl border border-slate-200/70">
+                <div class="flex justify-between items-center text-xs sm:text-sm mb-1.5">
+                  <label for="in-train-score" class="font-semibold text-slate-800">訓練測驗均分</label>
+                  <span id="val-train-score" class="font-bold text-teal-700 bg-white px-2 py-0.5 rounded-md border border-slate-200">84 分</span>
+                </div>
+                <input id="in-train-score" type="range" min="60" max="100" step="1" value="84" oninput="runPrediction()" class="w-full" />
+                <div class="flex justify-between text-[11px] text-slate-400 mt-1"><span>60 分</span><span>80 分</span><span>100 分</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Group 3: Demographics, Rank & Compensation -->
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded-md bg-slate-200 text-slate-800 text-xs font-bold">第三構面</span>
+                基本背景、職務職等與薪資結構（控制變數）
+              </h3>
+              <span class="text-xs text-slate-400">6 項指標</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+              <!-- 性別 (idx 0) -->
+              <div class="bg-slate-50/80 p-3 rounded-xl border border-slate-200/70">
+                <label for="in-gender" class="block text-xs sm:text-sm font-semibold text-slate-800 mb-1.5">性別</label>
+                <select id="in-gender" onchange="runPrediction()"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs sm:text-sm font-medium text-slate-800 focus:border-teal-600 focus:outline-none">
+                  <option value="1">男 (Male)</option>
+                  <option value="0">女 (Female)</option>
+                </select>
+              </div>
+
+              <!-- 最高學歷 (idx 2) -->
+              <div class="bg-slate-50/80 p-3 rounded-xl border border-slate-200/70">
+                <label for="in-edu" class="block text-xs sm:text-sm font-semibold text-slate-800 mb-1.5">最高學歷</label>
+                <select id="in-edu" onchange="runPrediction()"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs sm:text-sm font-medium text-slate-800 focus:border-teal-600 focus:outline-none">
+                  <option value="1">高中職 (1)</option>
+                  <option value="2">專科 (2)</option>
+                  <option value="3" selected>大學 (3)</option>
+                  <option value="4">碩士 (4)</option>
+                  <option value="5">博士 (5)</option>
+                </select>
+              </div>
+
+              <!-- 職等 (idx 3) -->
+              <div class="bg-slate-50/80 p-3 rounded-xl border border-slate-200/70">
+                <div class="flex justify-between items-center text-xs sm:text-sm mb-1.5">
+                  <label for="in-grade" class="font-semibold text-slate-800">職務職等</label>
+                  <span id="val-grade" class="font-bold text-teal-700 bg-white px-2 py-0.5 rounded-md border border-slate-200">4 職等</span>
+                </div>
+                <input id="in-grade" type="range" min="1" max="10" step="1" value="4" oninput="runPrediction()" class="w-full" />
+                <div class="flex justify-between text-[11px] text-slate-400 mt-1"><span>1 職等</span><span>5 職等</span><span>10 職等</span></div>
+              </div>
+
+              <!-- 年資 (idx 4) -->
+              <div class="bg-slate-50/80 p-3 rounded-xl border border-slate-200/70">
+                <div class="flex justify-between items-center text-xs sm:text-sm mb-1.5">
+                  <label for="in-tenure" class="font-semibold text-slate-800">公司年資</label>
+                  <span id="val-tenure" class="font-bold text-teal-700 bg-white px-2 py-0.5 rounded-md border border-slate-200">6.5 年</span>
+                </div>
+                <input id="in-tenure" type="range" min="0.5" max="25" step="0.5" value="6.5" oninput="runPrediction()" class="w-full" />
+                <div class="flex justify-between text-[11px] text-slate-400 mt-1"><span>0.5 年</span><span>12.5 年</span><span>25 年</span></div>
+              </div>
+
+              <!-- 年齡 (idx 1) -->
+              <div class="bg-slate-50/80 p-3 rounded-xl border border-slate-200/70">
+                <div class="flex justify-between items-center text-xs sm:text-sm mb-1.5">
+                  <label for="in-age" class="font-semibold text-slate-800">年齡</label>
+                  <span id="val-age" class="font-bold text-teal-700 bg-white px-2 py-0.5 rounded-md border border-slate-200">34 歲</span>
+                </div>
+                <input id="in-age" type="range" min="23" max="62" step="1" value="34" oninput="runPrediction()" class="w-full" />
+                <div class="flex justify-between text-[11px] text-slate-400 mt-1"><span>23 歲</span><span>42 歲</span><span>62 歲</span></div>
+              </div>
+
+              <!-- 月薪總計 (idx 5) -->
+              <div class="bg-slate-50/80 p-3 rounded-xl border border-slate-200/70">
+                <div class="flex justify-between items-center text-xs sm:text-sm mb-1.5">
+                  <label for="in-salary" class="font-semibold text-slate-800">月薪總計</label>
+                  <span id="val-salary" class="font-bold text-teal-700 bg-white px-2 py-0.5 rounded-md border border-slate-200">NT$ 84,000</span>
+                </div>
+                <input id="in-salary" type="range" min="40000" max="150000" step="1000" value="84000" oninput="runPrediction()" class="w-full" />
+                <div class="flex justify-between text-[11px] text-slate-400 mt-1"><span>40,000</span><span>95,000</span><span>150,000</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column (5 cols): Live Prediction Output & Probability Visuals -->
+        <div class="lg:col-span-5 space-y-5 lg:sticky lg:top-5">
+
+          <!-- Main Hybrid Ensemble Result Card -->
+          <div id="pred-hero-card" class="bg-white rounded-2xl shadow-md border-2 border-blue-500/40 p-5 sm:p-6 transition-all">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-teal-700 bg-teal-50 px-2.5 py-1 rounded-full border border-teal-200">
+                  統計 + ML 混合集成最終預測
+                </span>
+                <div class="mt-3 flex items-baseline gap-3">
+                  <span id="pred-final-grade" class="text-3xl sm:text-4xl font-black text-blue-700">甲等 (A)</span>
+                  <span id="pred-final-conf" class="text-sm sm:text-base font-bold px-2.5 py-0.5 rounded-lg bg-blue-100 text-blue-800">信心度 74.2%</span>
+                </div>
+              </div>
+              <div id="pred-grade-icon" class="w-14 h-14 rounded-2xl bg-blue-600 text-white flex items-center justify-center text-2xl font-black shadow-sm shrink-0">
+                A
+              </div>
+            </div>
+
+            <!-- 3-Model Consensus Mini Cards -->
+            <div class="grid grid-cols-3 gap-2.5 mt-5 pt-4 border-t border-slate-100">
+              <div class="bg-slate-50 rounded-xl p-2.5 border border-slate-200/80 text-center">
+                <div class="text-[11px] font-semibold text-slate-500">統計順序邏輯斯</div>
+                <div id="sub-stat-grade" class="text-xs sm:text-sm font-extrabold text-slate-900 mt-1">甲等 (A)</div>
+                <div id="sub-stat-prob" class="text-[11px] text-teal-700 font-semibold mt-0.5">78.4%</div>
+              </div>
+              <div class="bg-slate-50 rounded-xl p-2.5 border border-slate-200/80 text-center">
+                <div class="text-[11px] font-semibold text-slate-500">機器學習分類器</div>
+                <div id="sub-ml-grade" class="text-xs sm:text-sm font-extrabold text-slate-900 mt-1">甲等 (A)</div>
+                <div id="sub-ml-prob" class="text-[11px] text-indigo-700 font-semibold mt-0.5">69.1%</div>
+              </div>
+              <div class="bg-teal-50/70 rounded-xl p-2.5 border border-teal-200 text-center">
+                <div class="text-[11px] font-semibold text-teal-800">混合軟投票 (55:45)</div>
+                <div id="sub-hyb-grade" class="text-xs sm:text-sm font-extrabold text-teal-950 mt-1">甲等 (A)</div>
+                <div id="sub-hyb-prob" class="text-[11px] text-teal-700 font-bold mt-0.5">74.2%</div>
+              </div>
+            </div>
+
+            <!-- Animated Probability Bars for 4 Grades -->
+            <div class="mt-5 space-y-3">
+              <div class="text-xs font-bold text-slate-700 flex justify-between">
+                <span>四項考績評等預測機率分布</span>
+                <span class="text-slate-400 font-normal">加總 = 100.0%</span>
+              </div>
+
+              <!-- 優等(A+) -->
+              <div>
+                <div class="flex justify-between text-xs font-semibold mb-1">
+                  <span class="text-emerald-700 flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>優等 (A+)</span>
+                  <span id="prob-txt-3" class="font-bold text-emerald-700">12.5%</span>
+                </div>
+                <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+                  <div id="prob-bar-3" class="h-full bg-emerald-500 rounded-full transition-all duration-300" style="width: 12.5%"></div>
+                </div>
+              </div>
+
+              <!-- 甲等(A) -->
+              <div>
+                <div class="flex justify-between text-xs font-semibold mb-1">
+                  <span class="text-blue-700 flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>甲等 (A)</span>
+                  <span id="prob-txt-2" class="font-bold text-blue-700">74.2%</span>
+                </div>
+                <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+                  <div id="prob-bar-2" class="h-full bg-blue-500 rounded-full transition-all duration-300" style="width: 74.2%"></div>
+                </div>
+              </div>
+
+              <!-- 乙等(B) -->
+              <div>
+                <div class="flex justify-between text-xs font-semibold mb-1">
+                  <span class="text-amber-700 flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>乙等 (B)</span>
+                  <span id="prob-txt-1" class="font-bold text-amber-700">13.1%</span>
+                </div>
+                <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+                  <div id="prob-bar-1" class="h-full bg-amber-500 rounded-full transition-all duration-300" style="width: 13.1%"></div>
+                </div>
+              </div>
+
+              <!-- 丙等(C) -->
+              <div>
+                <div class="flex justify-between text-xs font-semibold mb-1">
+                  <span class="text-rose-700 flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>丙等 (C)</span>
+                  <span id="prob-txt-0" class="font-bold text-rose-700">0.2%</span>
+                </div>
+                <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+                  <div id="prob-bar-0" class="h-full bg-rose-500 rounded-full transition-all duration-300" style="width: 0.2%"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Chart.js Model Probability Comparison -->
+            <div class="mt-5 pt-4 border-t border-slate-100">
+              <div class="text-xs font-bold text-slate-700 mb-2">統計模型 vs. 機器學習機率曲線對照</div>
+              <div class="h-44 w-full">
+                <canvas id="simProbChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tailored HR Diagnostic Advice Box -->
+          <div id="hr-advice-box" class="bg-slate-900 text-white rounded-2xl shadow-sm p-5 border border-slate-800">
+            <div class="flex items-center gap-2 text-teal-300 text-xs font-bold uppercase tracking-wider">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+              <span>人資管理診斷與行動建議</span>
+            </div>
+            <div id="hr-advice-title" class="text-base font-bold text-white mt-1.5">
+              核心骨幹表現穩健（建議持續累積專業證照與嘉獎積分）
+            </div>
+            <ul id="hr-advice-list" class="mt-2.5 space-y-1.5 text-xs sm:text-sm text-slate-300 list-disc list-inside">
+              <li>出勤紀律良好（無曠職紀錄），已通過考績基本門檻檢核。</li>
+              <li>若年度訓練時數提升至 50 小時以上或增加 1 張專業證照，晉升優等(A+)機率將顯著提高。</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 2: MODEL BENCHMARK & CONFUSION MATRIX                             -->
+    <!-- ===================================================================== -->
+    <section id="panel-benchmark" class="tab-panel hidden space-y-6">
+
+      <!-- KPI Highlight Cards -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-sm">
+          <div class="text-xs font-semibold text-slate-500">最佳交叉驗證準確率</div>
+          <div class="text-2xl sm:text-3xl font-black text-teal-700 mt-1">72.7%</div>
+          <div class="text-xs text-slate-500 mt-1">統計+ML 軟投票混合集成 (109/150)</div>
+        </div>
+        <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-sm">
+          <div class="text-xs font-semibold text-slate-500">二次加權 Kappa (QWK)</div>
+          <div class="text-2xl sm:text-3xl font-black text-blue-700 mt-1">0.790</div>
+          <div class="text-xs text-slate-500 mt-1">高度順序一致性（>0.75 優良水準）</div>
+        </div>
+        <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-sm">
+          <div class="text-xs font-semibold text-slate-500">容許一等誤差命中率 (±1)</div>
+          <div class="text-2xl sm:text-3xl font-black text-emerald-700 mt-1">100.0%</div>
+          <div class="text-xs text-slate-500 mt-1">零跨兩級嚴重誤判（150/150 人）</div>
+        </div>
+        <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-sm">
+          <div class="text-xs font-semibold text-slate-500">最低對數損失 (LogLoss)</div>
+          <div class="text-2xl sm:text-3xl font-black text-indigo-700 mt-1">0.664</div>
+          <div class="text-xs text-slate-500 mt-1">機率校準精準度優於所有單一模型</div>
+        </div>
+      </div>
+
+      <!-- Chart + Confusion Matrix Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- 8 Models Bar Chart (7 cols) -->
+        <div class="lg:col-span-7 bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+            <div>
+              <h2 class="text-base sm:text-lg font-bold text-slate-900">八種統計與機器學習模型效能比較 (5-Fold CV)</h2>
+              <p class="text-xs text-slate-500">切換不同評估指標檢視各模型在順序考績預測上的表現</p>
+            </div>
+            <select id="metric-selector" onchange="updateBenchmarkChart()"
+              class="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs sm:text-sm font-semibold text-slate-800 focus:border-teal-600 focus:outline-none">
+              <option value="acc">準確率 Accuracy (%)</option>
+              <option value="wf1">加權 F1 (Weighted F1)</option>
+              <option value="mf1">巨集 F1 (Macro F1)</option>
+              <option value="qwk">二次加權 Kappa (QWK)</option>
+              <option value="pm1">容許一等誤差率 ±1 (%)</option>
+              <option value="logloss">對數損失 LogLoss (越低越佳)</option>
+            </select>
+          </div>
+          <div class="h-80 w-full">
+            <canvas id="benchmarkChart"></canvas>
+          </div>
+          <div class="mt-3 flex flex-wrap gap-4 text-xs text-slate-600">
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-teal-600"></span>混合集成 (Hybrid Ensemble)</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-blue-700"></span>統計方法 (Statistical Models)</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-slate-500"></span>機器學習 (Machine Learning)</span>
+          </div>
+        </div>
+
+        <!-- Confusion Matrix (5 cols) -->
+        <div class="lg:col-span-5 bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 flex flex-col justify-between">
+          <div>
+            <h2 class="text-base sm:text-lg font-bold text-slate-900">混合集成模型混淆矩陣 (N = 150)</h2>
+            <p class="text-xs text-slate-500 mt-0.5">列為實際考績等第，欄為模型預測等第（主對角線為完全命中）</p>
+
+            <div class="mt-4 overflow-x-auto">
+              <table class="w-full text-center border-collapse text-xs sm:text-sm">
+                <thead>
+                  <tr>
+                    <th class="p-2 bg-slate-100 text-slate-600 font-bold border border-slate-200 rounded-tl-lg">實際 \ 預測</th>
+                    <th class="p-2 bg-rose-50 text-rose-800 font-bold border border-slate-200">丙等(C)</th>
+                    <th class="p-2 bg-amber-50 text-amber-800 font-bold border border-slate-200">乙等(B)</th>
+                    <th class="p-2 bg-blue-50 text-blue-800 font-bold border border-slate-200">甲等(A)</th>
+                    <th class="p-2 bg-emerald-50 text-emerald-800 font-bold border border-slate-200 rounded-tr-lg">優等(A+)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- Row C (13) -->
+                  <tr>
+                    <th class="p-2.5 bg-rose-50 text-rose-800 font-bold border border-slate-200 text-left">丙等(C) <span class="text-[11px] font-normal">(13)</span></th>
+                    <td class="p-2.5 bg-teal-700 text-white font-extrabold border border-slate-200">12 人<div class="text-[11px] font-normal opacity-90">92.3%</div></td>
+                    <td class="p-2.5 bg-amber-50/70 text-slate-700 border border-slate-200">1 人<div class="text-[11px] text-slate-400">7.7%</div></td>
+                    <td class="p-2.5 bg-slate-50 text-slate-400 border border-slate-200">0 人<div class="text-[11px]">0.0%</div></td>
+                    <td class="p-2.5 bg-slate-50 text-slate-400 border border-slate-200">0 人<div class="text-[11px]">0.0%</div></td>
+                  </tr>
+                  <!-- Row B (40) -->
+                  <tr>
+                    <th class="p-2.5 bg-amber-50 text-amber-800 font-bold border border-slate-200 text-left">乙等(B) <span class="text-[11px] font-normal">(40)</span></th>
+                    <td class="p-2.5 bg-amber-50/70 text-slate-700 border border-slate-200">1 人<div class="text-[11px] text-slate-400">2.5%</div></td>
+                    <td class="p-2.5 bg-teal-600 text-white font-extrabold border border-slate-200">25 人<div class="text-[11px] font-normal opacity-90">62.5%</div></td>
+                    <td class="p-2.5 bg-teal-50 text-teal-900 font-semibold border border-slate-200">14 人<div class="text-[11px] text-teal-700">35.0%</div></td>
+                    <td class="p-2.5 bg-slate-50 text-slate-400 border border-slate-200">0 人<div class="text-[11px]">0.0%</div></td>
+                  </tr>
+                  <!-- Row A (72) -->
+                  <tr>
+                    <th class="p-2.5 bg-blue-50 text-blue-800 font-bold border border-slate-200 text-left">甲等(A) <span class="text-[11px] font-normal">(72)</span></th>
+                    <td class="p-2.5 bg-slate-50 text-slate-400 border border-slate-200">0 人<div class="text-[11px]">0.0%</div></td>
+                    <td class="p-2.5 bg-teal-50/60 text-slate-700 border border-slate-200">8 人<div class="text-[11px] text-slate-500">11.1%</div></td>
+                    <td class="p-2.5 bg-teal-800 text-white font-extrabold border border-slate-200">60 人<div class="text-[11px] font-normal opacity-90">83.3%</div></td>
+                    <td class="p-2.5 bg-teal-50/60 text-slate-700 border border-slate-200">4 人<div class="text-[11px] text-slate-500">5.6%</div></td>
+                  </tr>
+                  <!-- Row A+ (25) -->
+                  <tr>
+                    <th class="p-2.5 bg-emerald-50 text-emerald-800 font-bold border border-slate-200 text-left">優等(A+) <span class="text-[11px] font-normal">(25)</span></th>
+                    <td class="p-2.5 bg-slate-50 text-slate-400 border border-slate-200">0 人<div class="text-[11px]">0.0%</div></td>
+                    <td class="p-2.5 bg-slate-50 text-slate-400 border border-slate-200">0 人<div class="text-[11px]">0.0%</div></td>
+                    <td class="p-2.5 bg-teal-50 text-teal-900 font-semibold border border-slate-200">13 人<div class="text-[11px] text-teal-700">52.0%</div></td>
+                    <td class="p-2.5 bg-teal-600 text-white font-extrabold border border-slate-200">12 人<div class="text-[11px] font-normal opacity-90">48.0%</div></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="mt-4 bg-slate-50 rounded-xl p-3.5 border border-slate-200 text-xs text-slate-600 space-y-1">
+            <div class="font-bold text-slate-800">📌 方法論關鍵發現：</div>
+            <p>• <strong>順序統計模型勝過純樹模型：</strong>在 N=150 小樣本順序目標上，順序邏輯斯迴歸（71.3%）優於隨機森林與梯度提升樹（66.7%），主因在於累積勝算門檻有效避免兩端少數類別過擬合。</p>
+            <p>• <strong>零嚴重誤判：</strong>所有非對角線誤差（41 人）全數落於相鄰 1 個等第（±1 等第命中率 100%）。</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Full Benchmark Data Table -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 overflow-x-auto">
+        <h3 class="text-base font-bold text-slate-900 mb-3">完整模型效能指標總表（分層 5 折交叉驗證 Stratified 5-Fold CV）</h3>
+        <table class="w-full text-left border-collapse text-xs sm:text-sm">
+          <thead>
+            <tr class="bg-slate-100 text-slate-700 border-b border-slate-200">
+              <th class="py-2.5 px-3 font-bold">預測模型名稱</th>
+              <th class="py-2.5 px-3 font-bold">方法類型</th>
+              <th class="py-2.5 px-3 font-bold text-right">準確率 (Accuracy)</th>
+              <th class="py-2.5 px-3 font-bold text-right">加權 F1</th>
+              <th class="py-2.5 px-3 font-bold text-right">巨集 F1</th>
+              <th class="py-2.5 px-3 font-bold text-right">二次加權 Kappa</th>
+              <th class="py-2.5 px-3 font-bold text-right">±1 等第命中率</th>
+              <th class="py-2.5 px-3 font-bold text-right">對數損失 (LogLoss)</th>
+            </tr>
+          </thead>
+          <tbody id="benchmark-table-body" class="divide-y divide-slate-100"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 3: KEY DRIVERS & REGRESSION TESTS                                 -->
+    <!-- ===================================================================== -->
+    <section id="panel-drivers" class="tab-panel hidden space-y-6">
+
+      <!-- Dual Drivers Charts -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Chart A: Ordered Logit z-stats -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5">
+          <h2 class="text-base sm:text-lg font-bold text-slate-900">A. 統計迴歸顯著影響因子（標準化 z 統計量）</h2>
+          <p class="text-xs text-slate-500 mt-0.5">虛線為雙尾顯著水準門檻 |z| = 1.96 (p = .05)；曠職天數因準完全分離另列說明</p>
+          <div class="h-80 w-full mt-3">
+            <canvas id="logitZChart"></canvas>
+          </div>
+          <div class="mt-3 p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-900">
+            <strong>⚠️ 曠職天數準完全分離（Quasi-Complete Separation）：</strong>迴歸係數 B = -8.84（OR &lt; 0.001），凡年度曠職 ≥ 1 天者（13 人）全數落入丙等(C)，構成考績一票否決紅線。
+          </div>
+        </div>
+
+        <!-- Chart B: ML Permutation Importance -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5">
+          <h2 class="text-base sm:text-lg font-bold text-slate-900">B. 機器學習特徵重要性 Top 12 (5-Fold Permutation)</h2>
+          <p class="text-xs text-slate-500 mt-0.5">衡量隨機置換單一特徵後，模型交叉驗證準確率平均下降幅度（%）</p>
+          <div class="h-80 w-full mt-3">
+            <canvas id="mlPermChart"></canvas>
+          </div>
+          <div class="mt-3 p-3 rounded-xl bg-teal-50 border border-teal-200 text-xs text-teal-900">
+            <strong>💡 雙軌評核機制：</strong>「曠職、申誡、遲到」決定是否觸發丙等底線；在出勤合規前提下，「獎懲淨積分、訓練時數、測驗均分與證照數」決定甲等與優等分化。
+          </div>
+        </div>
+      </div>
+
+      <!-- Full Regression Table + Fairness ANOVA/Chi-square Card -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="lg:col-span-8 bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 overflow-x-auto">
+          <h3 class="text-base font-bold text-slate-900 mb-1">多變量順序邏輯斯迴歸（Ordered Logit）參數估計表</h3>
+          <p class="text-xs text-slate-500 mb-3">全模型對數概似比檢定 LLR χ² = 197.46 (p = 6.96×10⁻³⁴)，McFadden Pseudo-R² = 0.5416</p>
+          <table class="w-full text-left border-collapse text-xs sm:text-sm">
+            <thead>
+              <tr class="bg-slate-100 text-slate-700 border-b border-slate-200">
+                <th class="py-2.5 px-3 font-bold">預測變數（標準化）</th>
+                <th class="py-2.5 px-3 font-bold text-right">迴歸係數 (B)</th>
+                <th class="py-2.5 px-3 font-bold text-right">標準誤 (SE)</th>
+                <th class="py-2.5 px-3 font-bold text-right">z 統計量</th>
+                <th class="py-2.5 px-3 font-bold text-right">p 值</th>
+                <th class="py-2.5 px-3 font-bold text-right">勝算比 (OR)</th>
+                <th class="py-2.5 px-3 font-bold">實務方向解讀</th>
+              </tr>
+            </thead>
+            <tbody id="regression-table-body" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+
+        <!-- Fairness & Bivariate Summary -->
+        <div class="lg:col-span-4 bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 space-y-4">
+          <h3 class="text-base font-bold text-slate-900">評核公平性與群組差異檢定</h3>
+          <p class="text-xs text-slate-500">跨四個考績等第之單因子變異數分析（ANOVA）與卡方獨立性檢定結果：</p>
+
+          <div class="p-3.5 rounded-xl bg-emerald-50/80 border border-emerald-200 space-y-1.5">
+            <div class="text-xs font-bold text-emerald-900">✅ 人口與部門中立性（無統計偏誤）</div>
+            <ul class="text-xs text-emerald-800 space-y-1">
+              <li>• <strong>性別：</strong>χ² = 2.51, p = .4738（不顯著）</li>
+              <li>• <strong>最高學歷：</strong>χ² = 10.49, p = .5727（不顯著）</li>
+              <li>• <strong>所屬部門：</strong>χ² = 20.99, p = .2799（不顯著）</li>
+            </ul>
+          </div>
+
+          <div class="p-3.5 rounded-xl bg-blue-50/80 border border-blue-200 space-y-1.5">
+            <div class="text-xs font-bold text-blue-900">📈 行為績效單調顯著指標 (p &lt; .01)</div>
+            <ul class="text-xs text-blue-800 space-y-1">
+              <li>• <strong>曠職天數：</strong>F = 207.19 (p &lt; .0001)</li>
+              <li>• <strong>獎懲淨積分：</strong>F = 39.41 (p &lt; .0001)</li>
+              <li>• <strong>遲到早退次數：</strong>F = 32.25 (p &lt; .0001)</li>
+              <li>• <strong>實際出勤率：</strong>F = 15.30 (p &lt; .0001)</li>
+              <li>• <strong>訓練測驗均分：</strong>F = 12.28 (p &lt; .0001)</li>
+              <li>• <strong>年度總訓練時數：</strong>F = 5.68 (p = .0010)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 4: TYPICAL EMPLOYEE CASES & HR WARNING SEGMENTS                   -->
+    <!-- ===================================================================== -->
+    <section id="panel-cases" class="tab-panel hidden space-y-6">
+
+      <!-- 4 HR Segment Overview Cards -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <button onclick="filterCases('預測一致')" class="text-left bg-white hover:border-teal-500 rounded-2xl p-4 border border-slate-200/80 shadow-sm transition cursor-pointer">
+          <div class="flex items-center justify-between">
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-teal-50 text-teal-800 border border-teal-200">預測一致</span>
+            <span class="text-xs text-slate-400">64.7%</span>
+          </div>
+          <div class="text-2xl font-black text-slate-900 mt-2">97 人</div>
+          <div class="text-xs text-slate-500 mt-1">模型預測與實際考績完全相符</div>
+        </button>
+
+        <button onclick="filterCases('落差檢視')" class="text-left bg-white hover:border-amber-500 rounded-2xl p-4 border border-slate-200/80 shadow-sm transition cursor-pointer">
+          <div class="flex items-center justify-between">
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">落差檢視</span>
+            <span class="text-xs text-slate-400">14.0%</span>
+          </div>
+          <div class="text-2xl font-black text-slate-900 mt-2">21 人</div>
+          <div class="text-xs text-slate-500 mt-1">實際高於客觀預測，需關懷負荷</div>
+        </button>
+
+        <button onclick="filterCases('高潛力觀察')" class="text-left bg-white hover:border-blue-500 rounded-2xl p-4 border border-slate-200/80 shadow-sm transition cursor-pointer">
+          <div class="flex items-center justify-between">
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-800 border border-blue-200">高潛力觀察</span>
+            <span class="text-xs text-slate-400">12.0%</span>
+          </div>
+          <div class="text-2xl font-black text-slate-900 mt-2">18 人</div>
+          <div class="text-xs text-slate-500 mt-1">客觀條件優於現行考績，建議儲備</div>
+        </button>
+
+        <button onclick="filterCases('高風險預警')" class="text-left bg-white hover:border-rose-500 rounded-2xl p-4 border border-slate-200/80 shadow-sm transition cursor-pointer">
+          <div class="flex items-center justify-between">
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-800 border border-rose-200">高風險預警</span>
+            <span class="text-xs text-slate-400">9.3%</span>
+          </div>
+          <div class="text-2xl font-black text-slate-900 mt-2">14 人</div>
+          <div class="text-xs text-slate-500 mt-1">落入或預警丙等(C)，啟動 PIP 輔導</div>
+        </button>
+      </div>
+
+      <!-- Filter Bar & Table -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+          <div class="flex flex-wrap items-center gap-1.5" id="case-filter-pills">
+            <button onclick="filterCases('ALL')" data-cat="ALL"
+              class="case-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-white cursor-pointer">
+              全部代表案例 (24)
+            </button>
+            <button onclick="filterCases('高風險預警')" data-cat="高風險預警"
+              class="case-pill px-3 py-1.5 rounded-xl text-xs font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 cursor-pointer">
+              高風險預警
+            </button>
+            <button onclick="filterCases('高潛力觀察')" data-cat="高潛力觀察"
+              class="case-pill px-3 py-1.5 rounded-xl text-xs font-semibold bg-blue-50 text-blue-700 hover:bg-blue-100 cursor-pointer">
+              高潛力觀察
+            </button>
+            <button onclick="filterCases('落差檢視')" data-cat="落差檢視"
+              class="case-pill px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-50 text-amber-700 hover:bg-amber-100 cursor-pointer">
+              落差檢視
+            </button>
+            <button onclick="filterCases('預測一致')" data-cat="預測一致"
+              class="case-pill px-3 py-1.5 rounded-xl text-xs font-semibold bg-teal-50 text-teal-700 hover:bg-teal-100 cursor-pointer">
+              預測一致
+            </button>
+          </div>
+
+          <div class="relative w-full md:w-72">
+            <input id="case-search" type="text" oninput="renderCasesTable()" placeholder="搜尋員工編號、姓名、部門或特徵..."
+              class="w-full rounded-xl border border-slate-300 bg-slate-50 pl-9 pr-3 py-2 text-xs sm:text-sm focus:border-teal-600 focus:bg-white focus:outline-none" />
+            <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs sm:text-sm">
+            <thead>
+              <tr class="bg-slate-100 text-slate-700 border-b border-slate-200">
+                <th class="py-2.5 px-3 font-bold">員工編號 / 姓名</th>
+                <th class="py-2.5 px-3 font-bold">部門 / 職等</th>
+                <th class="py-2.5 px-3 font-bold">關鍵行為指標摘要</th>
+                <th class="py-2.5 px-3 font-bold text-center">實際考績</th>
+                <th class="py-2.5 px-3 font-bold text-center">模型預測</th>
+                <th class="py-2.5 px-3 font-bold text-center">人資預警分類</th>
+                <th class="py-2.5 px-3 font-bold text-right">互動模擬</th>
+              </tr>
+            </thead>
+            <tbody id="cases-table-body" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Academic Attribution Footer -->
+  <footer class="bg-slate-900 text-slate-300 border-t border-slate-800 mt-10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs sm:text-sm">
+      <div class="font-bold text-white flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-teal-400"></span>
+        <span>銘傳大學公共事務與行政管理學系 劉祥得 製作</span>
+      </div>
+      <div class="text-slate-400 text-center sm:text-right">
+        員工人事考績評等預測互動分析平台｜順序邏輯斯迴歸（Ordered Logit）與機器學習整合應用
+      </div>
+    </div>
+  </footer>
+
+  <!-- ======================================================================= -->
+  <!-- JAVASCRIPT INFERENCE ENGINE & INTERACTIVE VISUALIZATIONS                 -->
+  <!-- ======================================================================= -->
+  <script>
+    // -------------------------------------------------------------------------
+    // 1. EXACT FITTED STATISTICAL & MACHINE LEARNING PARAMETERS
+    // Feature order (15 predictors):
+    // [0]性別男, [1]年齡, [2]學歷序號, [3]職等, [4]年資(年), [5]月薪總計,
+    // [6]持有證照數, [7]年度總訓練時數, [8]訓練測驗均分, [9]獎懲淨積分,
+    // [10]曠職天數, [11]遲到早退次數, [12]病假天數, [13]事假天數, [14]年度加班時數
+    // -------------------------------------------------------------------------
+    const SCALER_MEAN = [
+      0.54, 33.78, 3.02, 4.353333, 6.555333,
+      84438.666667, 2.26, 38.266667, 84.093333, 0.873333,
+      0.113333, 2.406667, 1.746667, 1.306667, 26.886667
+    ];
+
+    const SCALER_SCALE = [
+      0.498397, 4.522345, 0.875367, 1.858805, 3.620452,
+      20149.219296, 1.104114, 9.207726, 7.315916, 1.804796,
+      0.408847, 1.970099, 1.740447, 1.423361, 17.268289
+    ];
+
+    // Ordered Logit (Proportional Odds Model)
+    const ORD_BETAS = [
+      -0.097608, -0.371884, 0.351777, 0.89367, 0.785791,
+      -1.863066, 0.895599, 0.789388, 0.238116, 1.893432,
+      -8.837761, -0.964375, -0.868075, -0.204064, -0.187955
+    ];
+    const ORD_THRESHOLDS = [-5.350971, 1.046531, 5.901231];
+
+    // Multinomial Logistic Regression ML Classifier (Classes: 0=C, 1=B, 2=A, 3=A+)
+    const ML_COEF = [
+      [0.142937, -0.116219, 0.246178, 0.134117, 0.096793, 0.080537, -0.516967, -0.254086, 0.079384, -0.878368, 1.461258, 1.024853, 0.25459, 0.504449, -0.399927],
+      [-0.051401, 0.01685, -0.357937, 0.288044, -0.334393, 0.155097, -0.310839, -0.53341, -0.653645, -1.151428, -0.972786, 0.413625, 0.604594, -0.030286, 0.307893],
+      [0.085419, 0.343758, 0.031732, -0.316723, -0.119464, 0.420442, 0.341666, 0.199828, 0.335943, 0.415579, -0.450306, -0.275084, -0.179425, -0.177014, 0.053283],
+      [-0.176955, -0.244388, 0.080027, -0.105439, 0.357064, -0.656075, 0.48614, 0.587668, 0.238317, 1.614217, -0.038166, -1.163394, -0.679759, -0.297149, 0.038751]
+    ];
+    const ML_INTERCEPT = [-2.489929, 0.537749, 2.144458, -0.192278];
+
+    const GRADE_META = [
+      { key: 'C', label: '丙等 (C)', short: 'C', color: '#e11d48', bgClass: 'bg-rose-50', textClass: 'text-rose-700', badgeClass: 'bg-rose-100 text-rose-800 border-rose-200', iconBg: 'bg-rose-600', borderClass: 'border-rose-500/50' },
+      { key: 'B', label: '乙等 (B)', short: 'B', color: '#d97706', bgClass: 'bg-amber-50', textClass: 'text-amber-700', badgeClass: 'bg-amber-100 text-amber-800 border-amber-200', iconBg: 'bg-amber-600', borderClass: 'border-amber-500/50' },
+      { key: 'A', label: '甲等 (A)', short: 'A', color: '#2563eb', bgClass: 'bg-blue-50', textClass: 'text-blue-700', badgeClass: 'bg-blue-100 text-blue-800 border-blue-200', iconBg: 'bg-blue-600', borderClass: 'border-blue-500/50' },
+      { key: 'A+', label: '優等 (A+)', short: 'A+', color: '#059669', bgClass: 'bg-emerald-50', textClass: 'text-emerald-700', badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200', iconBg: 'bg-emerald-600', borderClass: 'border-emerald-500/50' }
+    ];
+
+    // -------------------------------------------------------------------------
+    // 2. REPRESENTATIVE EMPLOYEE CASES DATABASE (Across all 4 HR segments)
+    // -------------------------------------------------------------------------
+    const EMPLOYEE_CASES = [
+      // 高風險預警 (14人代表)
+      { id: 'EMP014', name: '張志豪', dept: '業務行銷部', actual: '丙等 (C)', pred: '丙等 (C)', segment: '高風險預警', summary: '曠職 2 天、遲到 9 次、獎懲 -2 分',
+        x: [1, 29, 3, 3, 2.5, 62000, 1, 22, 71, -2, 2, 9, 4, 3, 12] },
+      { id: 'EMP037', name: '林建宏', dept: '生產製造部', actual: '丙等 (C)', pred: '丙等 (C)', segment: '高風險預警', summary: '曠職 1 天、遲到 11 次、病假 6 天',
+        x: [1, 31, 2, 3, 3.5, 65000, 1, 24, 73, -1, 1, 11, 6, 2, 18] },
+      { id: 'EMP062', name: '王雅婷', dept: '客戶服務部', actual: '丙等 (C)', pred: '丙等 (C)', segment: '高風險預警', summary: '曠職 1 天、獎懲 -3 分、訓練 18 小時',
+        x: [0, 27, 3, 2, 2.0, 56000, 0, 18, 69, -3, 1, 7, 5, 4, 10] },
+      { id: 'EMP089', name: '陳冠宇', dept: '資訊系統部', actual: '丙等 (C)', pred: '丙等 (C)', segment: '高風險預警', summary: '曠職 2 天、遲到 8 次、測驗 72 分',
+        x: [1, 32, 3, 4, 4.0, 78000, 2, 26, 72, -1, 2, 8, 3, 2, 15] },
+      { id: 'EMP118', name: '黃淑芬', dept: '行政管理部', actual: '乙等 (B)', pred: '丙等 (C)', segment: '高風險預警', summary: '遲到 13 次、病假 8 天、獎懲 -2 分',
+        x: [0, 35, 2, 3, 5.0, 64000, 1, 25, 74, -2, 0, 13, 8, 4, 14] },
+      { id: 'EMP141', name: '吳宗翰', dept: '供應鏈物流部', actual: '丙等 (C)', pred: '丙等 (C)', segment: '高風險預警', summary: '曠職 1 天、遲到 10 次、獎懲 -2 分',
+        x: [1, 30, 3, 3, 3.0, 66000, 1, 20, 70, -2, 1, 10, 4, 3, 16] },
+
+      // 高潛力觀察 (18人代表)
+      { id: 'EMP008', name: '李佳穎', dept: '研發創新部', actual: '甲等 (A)', pred: '優等 (A+)', segment: '高潛力觀察', summary: '獎懲 +5 分、證照 4 張、訓練 56 小時、零遲到',
+        x: [0, 31, 4, 5, 5.5, 92000, 4, 56, 94, 5, 0, 0, 0, 0, 38] },
+      { id: 'EMP029', name: '周柏叡', dept: '資訊系統部', actual: '甲等 (A)', pred: '優等 (A+)', segment: '高潛力觀察', summary: '獎懲 +4 分、證照 4 張、訓練 52 小時、測驗 92 分',
+        x: [1, 33, 4, 5, 6.0, 95000, 4, 52, 92, 4, 0, 0, 1, 0, 35] },
+      { id: 'EMP054', name: '蔡宜君', dept: '財務會計部', actual: '乙等 (B)', pred: '甲等 (A)', segment: '高潛力觀察', summary: '獎懲 +3 分、證照 3 張、訓練 48 小時、無遲到病假',
+        x: [0, 30, 3, 4, 4.5, 79000, 3, 48, 90, 3, 0, 0, 0, 1, 24] },
+      { id: 'EMP076', name: '許哲維', dept: '業務行銷部', actual: '甲等 (A)', pred: '優等 (A+)', segment: '高潛力觀察', summary: '獎懲 +6 分、證照 3 張、訓練 54 小時',
+        x: [1, 34, 3, 5, 7.0, 88000, 3, 54, 91, 6, 0, 0, 0, 0, 42] },
+      { id: 'EMP103', name: '鄭雅文', dept: '人力資源部', actual: '乙等 (B)', pred: '甲等 (A)', segment: '高潛力觀察', summary: '獎懲 +2 分、證照 3 張、訓練 46 小時、出勤優良',
+        x: [0, 32, 4, 4, 5.0, 81000, 3, 46, 89, 2, 0, 1, 0, 0, 22] },
+      { id: 'EMP132', name: '謝承恩', dept: '研發創新部', actual: '甲等 (A)', pred: '優等 (A+)', segment: '高潛力觀察', summary: '獎懲 +5 分、證照 4 張、訓練 60 小時、測驗 95 分',
+        x: [1, 35, 4, 6, 7.5, 98000, 4, 60, 95, 5, 0, 0, 0, 1, 36] },
+
+      // 落差檢視 (21人代表)
+      { id: 'EMP019', name: '劉俊傑', dept: '業務行銷部', actual: '優等 (A+)', pred: '甲等 (A)', segment: '落差檢視', summary: '實際優等，但病假 4 天、遲到 3 次、加班 68 小時',
+        x: [1, 37, 3, 6, 9.0, 102000, 2, 36, 85, 2, 0, 3, 4, 2, 68] },
+      { id: 'EMP045', name: '楊佩珊', dept: '客戶服務部', actual: '甲等 (A)', pred: '乙等 (B)', segment: '落差檢視', summary: '實際甲等，但近期病假 5 天、遲到 5 次、加班 55 小時',
+        x: [0, 34, 3, 4, 6.5, 78000, 1, 30, 80, 0, 0, 5, 5, 2, 55] },
+      { id: 'EMP071', name: '郭家豪', dept: '生產製造部', actual: '優等 (A+)', pred: '甲等 (A)', segment: '落差檢視', summary: '實際優等，但訓練時數僅 28 小時、病假 3 天',
+        x: [1, 39, 3, 7, 11.0, 110000, 2, 28, 84, 3, 0, 2, 3, 1, 60] },
+      { id: 'EMP098', name: '洪婉婷', dept: '財務會計部', actual: '甲等 (A)', pred: '乙等 (B)', segment: '落差檢視', summary: '實際甲等，但遲到 4 次、病假 4 天、無嘉獎紀錄',
+        x: [0, 33, 3, 4, 6.0, 82000, 2, 32, 81, 0, 0, 4, 4, 2, 45] },
+      { id: 'EMP124', name: '曾明哲', dept: '資訊系統部', actual: '優等 (A+)', pred: '甲等 (A)', segment: '落差檢視', summary: '實際優等，但加班高達 85 小時、病假 3 天',
+        x: [1, 36, 4, 6, 8.5, 105000, 3, 34, 86, 2, 0, 2, 3, 1, 85] },
+      { id: 'EMP147', name: '賴怡君', dept: '行政管理部', actual: '甲等 (A)', pred: '乙等 (B)', segment: '落差檢視', summary: '實際甲等，但事假 4 天、遲到 4 次、訓練 26 小時',
+        x: [0, 35, 3, 4, 7.0, 79000, 1, 26, 79, 0, 0, 4, 3, 4, 30] },
+
+      // 預測一致 (97人代表)
+      { id: 'EMP003', name: '陳思妤', dept: '研發創新部', actual: '優等 (A+)', pred: '優等 (A+)', segment: '預測一致', summary: '獎懲 +6 分、證照 4 張、訓練 58 小時、零遲到病假',
+        x: [0, 34, 4, 6, 7.5, 96000, 4, 58, 95, 6, 0, 0, 0, 0, 32] },
+      { id: 'EMP022', name: '林哲瑋', dept: '資訊系統部', actual: '甲等 (A)', pred: '甲等 (A)', segment: '預測一致', summary: '獎懲 +1 分、證照 2 張、訓練 40 小時、出勤穩定',
+        x: [1, 34, 3, 5, 6.5, 86000, 2, 40, 85, 1, 0, 1, 1, 1, 28] },
+      { id: 'EMP051', name: '黃鈺婷', dept: '財務會計部', actual: '甲等 (A)', pred: '甲等 (A)', segment: '預測一致', summary: '獎懲 +2 分、證照 3 張、訓練 42 小時、遲到 1 次',
+        x: [0, 33, 3, 4, 6.0, 82000, 3, 42, 87, 2, 0, 1, 1, 1, 22] },
+      { id: 'EMP083', name: '王建國', dept: '生產製造部', actual: '乙等 (B)', pred: '乙等 (B)', segment: '預測一致', summary: '獎懲 0 分、證照 1 張、遲到 5 次、病假 3 天',
+        x: [1, 36, 2, 4, 8.0, 76000, 1, 28, 78, 0, 0, 5, 3, 2, 24] },
+      { id: 'EMP110', name: '吳佩蓉', dept: '客戶服務部', actual: '乙等 (B)', pred: '乙等 (B)', segment: '預測一致', summary: '獎懲 -1 分、證照 1 張、遲到 4 次、病假 4 天',
+        x: [0, 31, 3, 3, 4.5, 69000, 1, 30, 77, -1, 0, 4, 4, 2, 20] },
+      { id: 'EMP139', name: '張宏達', dept: '業務行銷部', actual: '優等 (A+)', pred: '優等 (A+)', segment: '預測一致', summary: '獎懲 +5 分、證照 3 張、訓練 55 小時、測驗 93 分',
+        x: [1, 35, 3, 5, 7.0, 91000, 3, 55, 93, 5, 0, 0, 0, 0, 34] }
+    ];
+
+    // -------------------------------------------------------------------------
+    // 3. STATISTICAL & ML INFERENCE FUNCTIONS
+    // -------------------------------------------------------------------------
+    function sigmoid(z) {
+      if (z > 35) return 1.0;
+      if (z < -35) return 0.0;
+      return 1.0 / (1.0 + Math.exp(-z));
+    }
+
+    function predictAllModels(rawX) {
+      // 1. Standardize features
+      const z = rawX.map((val, idx) => (val - SCALER_MEAN[idx]) / SCALER_SCALE[idx]);
+
+      // 2. Ordered Logit Probabilities (0:C, 1:B, 2:A, 3:A+)
+      let eta = 0;
+      for (let i = 0; i < 15; i++) {
+        eta += ORD_BETAS[i] * z[i];
+      }
+      const cdf0 = sigmoid(ORD_THRESHOLDS[0] - eta);
+      const cdf1 = sigmoid(ORD_THRESHOLDS[1] - eta);
+      const cdf2 = sigmoid(ORD_THRESHOLDS[2] - eta);
+
+      const pStat = [
+        Math.max(0, cdf0),
+        Math.max(0, cdf1 - cdf0),
+        Math.max(0, cdf2 - cdf1),
+        Math.max(0, 1.0 - cdf2)
+      ];
+      const sumStat = pStat.reduce((a, b) => a + b, 0) || 1;
+      for (let c = 0; c < 4; c++) pStat[c] /= sumStat;
+
+      // 3. Multinomial Logistic Regression (ML) Probabilities
+      const logits = [0, 0, 0, 0];
+      for (let c = 0; c < 4; c++) {
+        let s = ML_INTERCEPT[c];
+        for (let i = 0; i < 15; i++) {
+          s += ML_COEF[c][i] * z[i];
+        }
+        logits[c] = s;
+      }
+      const maxLogit = Math.max(...logits);
+      const exps = logits.map(l => Math.exp(l - maxLogit));
+      const sumExp = exps.reduce((a, b) => a + b, 0) || 1;
+      const pML = exps.map(e => e / sumExp);
+
+      // 4. Soft-voting Hybrid Ensemble (55% Ordered Logit + 45% ML)
+      const pHybrid = [0, 1, 2, 3].map(c => 0.55 * pStat[c] + 0.45 * pML[c]);
+
+      const argmax = arr => arr.indexOf(Math.max(...arr));
+      return {
+        pStat,
+        pML,
+        pHybrid,
+        idxStat: argmax(pStat),
+        idxML: argmax(pML),
+        idxHybrid: argmax(pHybrid)
+      };
+    }
+
+    // -------------------------------------------------------------------------
+    // 4. TAB 1 INTERACTIVE SIMULATOR LOGIC
+    // -------------------------------------------------------------------------
+    let simProbChartInstance = null;
+
+    function getInputsFromUI() {
+      // Exact 15-feature array matching SCALER_MEAN order
+      return [
+        parseFloat(document.getElementById('in-gender').value),      // [0] 性別男
+        parseFloat(document.getElementById('in-age').value),         // [1] 年齡
+        parseFloat(document.getElementById('in-edu').value),         // [2] 學歷序號
+        parseFloat(document.getElementById('in-grade').value),       // [3] 職等
+        parseFloat(document.getElementById('in-tenure').value),      // [4] 年資(年)
+        parseFloat(document.getElementById('in-salary').value),      // [5] 月薪總計
+        parseFloat(document.getElementById('in-certs').value),       // [6] 持有證照數
+        parseFloat(document.getElementById('in-train-hrs').value),   // [7] 年度總訓練時數
+        parseFloat(document.getElementById('in-train-score').value), // [8] 訓練測驗均分
+        parseFloat(document.getElementById('in-reward').value),      // [9] 獎懲淨積分
+        parseFloat(document.getElementById('in-absent').value),      // [10] 曠職天數
+        parseFloat(document.getElementById('in-late').value),        // [11] 遲到早退次數
+        parseFloat(document.getElementById('in-sick').value),        // [12] 病假天數
+        parseFloat(document.getElementById('in-personal').value),    // [13] 事假天數
+        parseFloat(document.getElementById('in-overtime').value)     // [14] 年度加班時數
+      ];
+    }
+
+    function setInputsToUI(x) {
+      document.getElementById('in-gender').value = String(x[0]);
+      document.getElementById('in-age').value = x[1];
+      document.getElementById('in-edu').value = String(x[2]);
+      document.getElementById('in-grade').value = x[3];
+      document.getElementById('in-tenure').value = x[4];
+      document.getElementById('in-salary').value = x[5];
+      document.getElementById('in-certs').value = x[6];
+      document.getElementById('in-train-hrs').value = x[7];
+      document.getElementById('in-train-score').value = x[8];
+      document.getElementById('in-reward').value = x[9];
+      document.getElementById('in-absent').value = x[10];
+      document.getElementById('in-late').value = x[11];
+      document.getElementById('in-sick').value = x[12];
+      document.getElementById('in-personal').value = x[13];
+      document.getElementById('in-overtime').value = x[14];
+      runPrediction();
+    }
+
+    function syncValueLabels(x) {
+      document.getElementById('val-age').textContent = `${x[1]} 歲`;
+      document.getElementById('val-grade').textContent = `${x[3]} 職等`;
+      document.getElementById('val-tenure').textContent = `${x[4].toFixed(1)} 年`;
+      document.getElementById('val-salary').textContent = `NT$ ${x[5].toLocaleString()}`;
+      document.getElementById('val-certs').textContent = `${x[6]} 張`;
+      document.getElementById('val-train-hrs').textContent = `${x[7]} 小時`;
+      document.getElementById('val-train-score').textContent = `${x[8]} 分`;
+      document.getElementById('val-reward').textContent = `${x[9] > 0 ? '+' + x[9] : x[9]} 分`;
+      document.getElementById('val-absent').textContent = `${x[10]} 天`;
+      document.getElementById('val-late').textContent = `${x[11]} 次`;
+      document.getElementById('val-sick').textContent = `${x[12]} 天`;
+      document.getElementById('val-personal').textContent = `${x[13]} 天`;
+      document.getElementById('val-overtime').textContent = `${x[14]} 小時`;
+    }
+
+    function generateHRAdvice(x, res) {
+      const titleEl = document.getElementById('hr-advice-title');
+      const listEl = document.getElementById('hr-advice-list');
+      const absent = x[10], late = x[11], sick = x[12], reward = x[9], certs = x[6], trainHrs = x[7], overtime = x[14];
+      const finalIdx = res.idxHybrid;
+
+      const bullets = [];
+      if (absent >= 1) {
+        titleEl.textContent = '🚨 高風險預警：觸發曠職一票否決紅線（建議立即啟動 PIP 輔導）';
+        bullets.push(`年度累計曠職 ${absent} 天，順序邏輯斯迴歸與機器學習模型同步判定高機率落入丙等(C)。`);
+        bullets.push('建議人資與直屬主管立即進行出勤訪談，確認異常原因並訂定績效改善計畫（PIP）。');
+      } else if (finalIdx === 0) {
+        titleEl.textContent = '⚠️ 考績丙等(C)預警：勤惰與負向獎懲累積過高';
+        bullets.push(`目前遲到早退達 ${late} 次、病假 ${sick} 天且獎懲淨積分為 ${reward} 分，大幅拉低綜合考績機率。`);
+        bullets.push('優先改善準點出勤紀律並避免後續申誡處分，即可有效脫離丙等風險區間。');
+      } else if (finalIdx === 3) {
+        titleEl.textContent = '🌟 頂尖優等(A+)人才：具備晉升與核心專案儲備資格';
+        bullets.push(`無曠職紀錄且獎懲淨積分達 ${reward > 0 ? '+' + reward : reward} 分、持有 ${certs} 張專業證照、年訓 ${trainHrs} 小時，展現高度職能投入。`);
+        bullets.push('建議納入年度晉升候選名單、高潛力人才庫（HiPo）或擔任部門內部導師。');
+      } else if (finalIdx === 2) {
+        titleEl.textContent = '💼 中堅骨幹(甲等 A)：表現穩定，具備衝刺優等(A+)潛力';
+        bullets.push('出勤合規且整體表現穩健，符合組織核心骨幹標準。');
+        if (late >= 3 || sick >= 4) {
+          bullets.push(`目前遲到早退（${late} 次）或病假（${sick} 天）略偏高，若能降低出勤扣分，晉升優等機率將明顯提升。`);
+        } else {
+          bullets.push('若能爭取嘉獎累積（獎懲淨積分 ≥ +3）並將年度訓練時數提升至 50 小時以上，可望突破優等門檻。');
+        }
+      } else {
+        titleEl.textContent = '📋 考績乙等(B)觀察區：亟需強化職能投入與出勤穩定度';
+        bullets.push(`目前遲到早退（${late} 次）、病假（${sick} 天）或訓練時數（${trainHrs} 小時）仍有改善空間。`);
+        bullets.push('建議主管於期中面談協助設定具體 KPI 與專業培訓目標，協助員工回升至甲等(A)水準。');
+      }
+
+      if (overtime >= 65) {
+        bullets.push(`注意：年度加班已達 ${overtime} 小時，建議主動關懷員工工作負荷與身心健康，預防過勞導致後續病假增加。`);
+      }
+
+      listEl.innerHTML = bullets.map(b => `<li>${b}</li>`).join('');
+    }
+
+    function runPrediction() {
+      const x = getInputsFromUI();
+      syncValueLabels(x);
+      const res = predictAllModels(x);
+
+      const meta = GRADE_META[res.idxHybrid];
+      const confPct = (res.pHybrid[res.idxHybrid] * 100).toFixed(1);
+
+      // Update Hero Card
+      const heroCard = document.getElementById('pred-hero-card');
+      heroCard.className = `bg-white rounded-2xl shadow-md border-2 ${meta.borderClass} p-5 sm:p-6 transition-all`;
+
+      const gradeEl = document.getElementById('pred-final-grade');
+      gradeEl.textContent = meta.label;
+      gradeEl.className = `text-3xl sm:text-4xl font-black ${meta.textClass}`;
+
+      const confEl = document.getElementById('pred-final-conf');
+      confEl.textContent = `信心度 ${confPct}%`;
+      confEl.className = `text-sm sm:text-base font-bold px-2.5 py-0.5 rounded-lg border ${meta.badgeClass}`;
+
+      const iconEl = document.getElementById('pred-grade-icon');
+      iconEl.textContent = meta.short;
+      iconEl.className = `w-14 h-14 rounded-2xl ${meta.iconBg} text-white flex items-center justify-center text-2xl font-black shadow-sm shrink-0`;
+
+      // Update 3-Model Consensus Mini Cards
+      document.getElementById('sub-stat-grade').textContent = GRADE_META[res.idxStat].label;
+      document.getElementById('sub-stat-prob').textContent = `${(res.pStat[res.idxStat] * 100).toFixed(1)}%`;
+
+      document.getElementById('sub-ml-grade').textContent = GRADE_META[res.idxML].label;
+      document.getElementById('sub-ml-prob').textContent = `${(res.pML[res.idxML] * 100).toFixed(1)}%`;
+
+      document.getElementById('sub-hyb-grade').textContent = meta.label;
+      document.getElementById('sub-hyb-prob').textContent = `${confPct}%`;
+
+      // Update Probability Bars
+      for (let c = 0; c < 4; c++) {
+        const pct = (res.pHybrid[c] * 100).toFixed(1);
+        document.getElementById(`prob-txt-${c}`).textContent = `${pct}%`;
+        document.getElementById(`prob-bar-${c}`).style.width = `${Math.max(0.5, parseFloat(pct))}%`;
+      }
+
+      // Update Chart.js grouped bar chart
+      updateSimChart(res);
+
+      // Update HR Advice
+      generateHRAdvice(x, res);
+    }
+
+    function updateSimChart(res) {
+      const ctx = document.getElementById('simProbChart');
+      if (!ctx) return;
+
+      const labels = ['丙等 (C)', '乙等 (B)', '甲等 (A)', '優等 (A+)'];
+      const statData = res.pStat.map(v => +(v * 100).toFixed(1));
+      const mlData = res.pML.map(v => +(v * 100).toFixed(1));
+      const hybData = res.pHybrid.map(v => +(v * 100).toFixed(1));
+
+      if (simProbChartInstance) {
+        simProbChartInstance.data.datasets[0].data = statData;
+        simProbChartInstance.data.datasets[1].data = mlData;
+        simProbChartInstance.data.datasets[2].data = hybData;
+        simProbChartInstance.update();
+        return;
+      }
+
+      simProbChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: '統計(Ordered Logit)', data: statData, backgroundColor: '#1d4ed8', borderRadius: 4 },
+            { label: '機器學習(ML)', data: mlData, backgroundColor: '#6366f1', borderRadius: 4 },
+            { label: '混合集成(Hybrid)', data: hybData, backgroundColor: '#0d9488', borderRadius: 4 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } },
+            tooltip: { callbacks: { label: c => `${c.dataset.label}: ${c.parsed.y}%` } }
+          },
+          scales: {
+            y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%', font: { size: 10 } }, grid: { color: '#f1f5f9' } },
+            x: { ticks: { font: { size: 11, weight: 'bold' } }, grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    function applyPreset(type) {
+      document.getElementById('quick-emp-select').value = '';
+      const badge = document.getElementById('loaded-emp-badge');
+      badge.classList.add('hidden');
+
+      if (type === 'star') {
+        setInputsToUI([0, 33, 4, 6, 7.0, 95000, 4, 56, 94, 5, 0, 0, 0, 0, 32]);
+        showToast('已套用「優等楷模範例」參數');
+      } else if (type === 'core') {
+        setInputsToUI([1, 34, 3, 5, 6.5, 85000, 2, 40, 85, 1, 0, 2, 1, 1, 28]);
+        showToast('已套用「中堅骨幹範例」參數');
+      } else if (type === 'risk') {
+        setInputsToUI([1, 30, 3, 3, 3.0, 64000, 1, 22, 72, -2, 1, 9, 5, 3, 14]);
+        showToast('已套用「高風險預警範例」參數');
+      } else {
+        setInputsToUI([1, 34, 3, 4, 6.5, 84000, 2, 38, 84, 1, 0, 2, 2, 1, 27]);
+        showToast('已重設為全體員工平均基準值');
+      }
+    }
+
+    function loadEmployeeById(empId) {
+      if (!empId) return;
+      const emp = EMPLOYEE_CASES.find(e => e.id === empId);
+      if (!emp) return;
+
+      setInputsToUI(emp.x);
+      document.getElementById('quick-emp-select').value = emp.id;
+
+      const badge = document.getElementById('loaded-emp-badge');
+      badge.textContent = `目前模擬個案：${emp.id} ${emp.name}（${emp.dept}｜實際考績：${emp.actual}｜${emp.segment}）`;
+      badge.classList.remove('hidden');
+
+      showToast(`已載入 ${emp.id} ${emp.name} 的完整人事資料`);
+    }
+
+    // -------------------------------------------------------------------------
+    // 5. TAB 2: MODEL BENCHMARK CHARTS & TABLE
+    // -------------------------------------------------------------------------
+    const BENCHMARK_DATA = [
+      { name: '統計+ML軟投票集成 (Hybrid Ensemble)', type: '混合集成', acc: 72.7, wf1: 0.720, mf1: 0.735, qwk: 0.790, pm1: 100.0, logloss: 0.664 },
+      { name: '順序邏輯斯迴歸 (Ordered Logit)', type: '統計方法', acc: 71.3, wf1: 0.712, mf1: 0.735, qwk: 0.790, pm1: 100.0, logloss: 0.764 },
+      { name: '多項邏輯斯迴歸 (Multinomial Logit)', type: '統計方法', acc: 70.0, wf1: 0.697, mf1: 0.707, qwk: 0.775, pm1: 100.0, logloss: 0.801 },
+      { name: '支持向量機 (RBF-SVM)', type: '機器學習', acc: 70.0, wf1: 0.685, mf1: 0.679, qwk: 0.760, pm1: 100.0, logloss: 0.729 },
+      { name: '極端隨機樹 (Extra Trees)', type: '機器學習', acc: 70.0, wf1: 0.681, mf1: 0.673, qwk: 0.743, pm1: 100.0, logloss: 0.795 },
+      { name: '梯度提升決策樹 (Gradient Boosting)', type: '機器學習', acc: 66.7, wf1: 0.665, mf1: 0.687, qwk: 0.759, pm1: 100.0, logloss: 1.025 },
+      { name: '多層感知器類神經網路 (MLP)', type: '機器學習', acc: 66.7, wf1: 0.667, mf1: 0.670, qwk: 0.733, pm1: 98.7, logloss: 1.414 },
+      { name: '隨機森林 (Random Forest)', type: '機器學習', acc: 66.7, wf1: 0.659, mf1: 0.638, qwk: 0.687, pm1: 98.7, logloss: 0.796 }
+    ];
+
+    let benchmarkChartInstance = null;
+
+    function renderBenchmarkTable() {
+      const tbody = document.getElementById('benchmark-table-body');
+      tbody.innerHTML = BENCHMARK_DATA.map((m, idx) => {
+        const isTop = idx === 0;
+        const typeBadge = m.type === '混合集成'
+          ? 'bg-teal-100 text-teal-800'
+          : m.type === '統計方法'
+            ? 'bg-blue-100 text-blue-800'
+            : 'bg-slate-100 text-slate-700';
+
+        return `
+          <tr class="${isTop ? 'bg-teal-50/50 font-semibold' : 'hover:bg-slate-50'}">
+            <td class="py-2.5 px-3 text-slate-900">${m.name}</td>
+            <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded-md text-xs font-bold ${typeBadge}">${m.type}</span></td>
+            <td class="py-2.5 px-3 text-right ${isTop ? 'text-teal-700 font-extrabold' : ''}">${m.acc.toFixed(1)}%</td>
+            <td class="py-2.5 px-3 text-right">${m.wf1.toFixed(3)}</td>
+            <td class="py-2.5 px-3 text-right">${m.mf1.toFixed(3)}</td>
+            <td class="py-2.5 px-3 text-right">${m.qwk.toFixed(3)}</td>
+            <td class="py-2.5 px-3 text-right">${m.pm1.toFixed(1)}%</td>
+            <td class="py-2.5 px-3 text-right ${isTop ? 'text-teal-700 font-extrabold' : ''}">${m.logloss.toFixed(3)}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function updateBenchmarkChart() {
+      const metric = document.getElementById('metric-selector').value;
+      const ctx = document.getElementById('benchmarkChart');
+      if (!ctx) return;
+
+      const labels = BENCHMARK_DATA.map(m => m.name);
+      const values = BENCHMARK_DATA.map(m => m[metric]);
+      const colors = BENCHMARK_DATA.map(m =>
+        m.type === '混合集成' ? '#0d9488' : m.type === '統計方法' ? '#1d4ed8' : '#64748b'
+      );
+
+      let minAxis = 50, maxAxis = 85, suffix = '%';
+      if (metric === 'wf1' || metric === 'mf1' || metric === 'qwk') {
+        minAxis = 0.5; maxAxis = 0.85; suffix = '';
+      } else if (metric === 'pm1') {
+        minAxis = 95; maxAxis = 100.5; suffix = '%';
+      } else if (metric === 'logloss') {
+        minAxis = 0; maxAxis = 1.6; suffix = '';
+      }
+
+      if (benchmarkChartInstance) {
+        benchmarkChartInstance.data.datasets[0].data = values;
+        benchmarkChartInstance.options.scales.x.min = minAxis;
+        benchmarkChartInstance.options.scales.x.max = maxAxis;
+        benchmarkChartInstance.options.scales.x.ticks.callback = v => v + suffix;
+        benchmarkChartInstance.update();
+        return;
+      }
+
+      benchmarkChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: '模型效能指標',
+            data: values,
+            backgroundColor: colors,
+            borderRadius: 6,
+            barThickness: 22
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: c => `${c.parsed.x}${suffix}`
+              }
+            }
+          },
+          scales: {
+            x: {
+              min: minAxis,
+              max: maxAxis,
+              ticks: { callback: v => v + suffix, font: { size: 11 } },
+              grid: { color: '#f1f5f9' }
+            },
+            y: {
+              ticks: { font: { size: 11, weight: '600' }, color: '#1e293b' },
+              grid: { display: false }
+            }
+          }
+        }
+      });
+    }
+
+    // -------------------------------------------------------------------------
+    // 6. TAB 3: KEY DRIVERS CHARTS & REGRESSION TABLE
+    // -------------------------------------------------------------------------
+    const REGRESSION_ROWS = [
+      { name: '獎懲淨積分', b: '+1.8934', se: '0.3597', z: '+5.263', p: '< .0001', or: '6.642', sig: true, desc: '正向影響最強：每增加 1 SD，晉升更高考績勝算提高 5.64 倍' },
+      { name: '年度總訓練時數', b: '+0.7894', se: '0.2579', z: '+3.061', p: '.0022', or: '2.202', sig: true, desc: '積極參訓者獲得高評等勝算顯著提升（+120%）' },
+      { name: '持有證照數', b: '+0.8956', se: '0.3094', z: '+2.895', p: '.0038', or: '2.449', sig: true, desc: '專業證照累積對考績晉升具獨立正向貢獻（+145%）' },
+      { name: '年資(年)', b: '+0.7858', se: '0.4310', z: '+1.823', p: '.0683', or: '2.194', sig: false, desc: '具邊際正向趨勢（p < .10），資深經驗有助穩定表現' },
+      { name: '學歷序號', b: '+0.3518', se: '0.2465', z: '+1.427', p: '.1536', or: '1.422', sig: false, desc: '控制職等與證照後，學歷本身未達統計顯著' },
+      { name: '訓練測驗均分', b: '+0.2381', se: '0.2455', z: '+0.970', p: '.3321', or: '1.269', sig: false, desc: '與訓練時數共線後呈溫和正向' },
+      { name: '職等', b: '+0.8937', se: '1.1245', z: '+0.795', p: '.4268', or: '2.444', sig: false, desc: '與月薪高度相關，跨職等評核標準維持公平' },
+      { name: '性別男', b: '-0.0976', se: '0.2140', z: '-0.456', p: '.6483', or: '0.907', sig: false, desc: '性別無統計顯著差異，評核具性別中立性' },
+      { name: '年度加班時數', b: '-0.1880', se: '0.2165', z: '-0.868', p: '.3853', or: '0.829', sig: false, desc: '單純工時長短並非高績效保證' },
+      { name: '事假天數', b: '-0.2041', se: '0.2218', z: '-0.920', p: '.3575', or: '0.815', sig: false, desc: '偶發事假對考績影響相對有限' },
+      { name: '年齡', b: '-0.3719', se: '0.3280', z: '-1.134', p: '.2569', or: '0.689', sig: false, desc: '年齡不構成考績顯著障礙' },
+      { name: '月薪總計', b: '-1.8631', se: '1.2450', z: '-1.496', p: '.1346', or: '0.155', sig: false, desc: '控制職等與年資後，高薪者被期待承擔更高績效標準' },
+      { name: '遲到早退次數', b: '-0.9644', se: '0.2839', z: '-3.397', p: '.0007', or: '0.381', sig: true, desc: '勤惰紀律不良顯著拉低考績等第（勝算下降 61.9%）' },
+      { name: '病假天數', b: '-0.8681', se: '0.2368', z: '-3.666', p: '.0002', or: '0.420', sig: true, desc: '病假頻率越高，獲得高評等勝算顯著下降 58.0%' },
+      { name: '曠職天數', b: '-8.8378', se: '772.36', z: '-0.011', p: '.9909', or: '< 0.001', sig: true, desc: '準完全分離紅線：凡曠職 ≥ 1 天者（13 人）全數落入丙等' }
+    ];
+
+    let driversRendered = false;
+
+    function initDriversSection() {
+      if (driversRendered) return;
+      driversRendered = true;
+
+      // Render Regression Table
+      const tbody = document.getElementById('regression-table-body');
+      tbody.innerHTML = REGRESSION_ROWS.map(r => `
+        <tr class="${r.sig ? 'bg-slate-50/70 font-medium' : 'hover:bg-slate-50'}">
+          <td class="py-2 px-3 font-bold text-slate-900">${r.name}</td>
+          <td class="py-2 px-3 text-right font-mono ${r.b.startsWith('+') ? 'text-teal-700' : 'text-rose-700'}">${r.b}</td>
+          <td class="py-2 px-3 text-right font-mono text-slate-500">${r.se}</td>
+          <td class="py-2 px-3 text-right font-mono font-bold ${r.sig ? 'text-slate-900' : 'text-slate-500'}">${r.z}</td>
+          <td class="py-2 px-3 text-right font-mono ${r.sig ? 'text-teal-700 font-bold' : 'text-slate-500'}">${r.p}</td>
+          <td class="py-2 px-3 text-right font-mono">${r.or}</td>
+          <td class="py-2 px-3 text-xs text-slate-600">${r.desc}</td>
+        </tr>
+      `).join('');
+
+      // Chart A: Standardized z-statistics (excluding quasi-complete separation absent)
+      const zLabels = [
+        '獎懲淨積分', '年度總訓練時數', '持有證照數', '年資(年)', '學歷序號',
+        '訓練測驗均分', '職等', '性別男', '年度加班時數', '事假天數',
+        '年齡', '月薪總計', '遲到早退次數', '病假天數'
+      ];
+      const zVals = [5.263, 3.061, 2.895, 1.823, 1.427, 0.970, 0.795, -0.456, -0.868, -0.920, -1.134, -1.496, -3.397, -3.666];
+      const zColors = zVals.map(v => v >= 1.96 ? '#0d9488' : v <= -1.96 ? '#e11d48' : '#94a3b8');
+
+      new Chart(document.getElementById('logitZChart'), {
+        type: 'bar',
+        data: {
+          labels: zLabels,
+          datasets: [{
+            label: '標準化 z 統計量',
+            data: zVals,
+            backgroundColor: zColors,
+            borderRadius: 4
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: c => `z = ${c.parsed.x > 0 ? '+' + c.parsed.x : c.parsed.x} (${Math.abs(c.parsed.x) >= 1.96 ? 'p < .05 顯著' : '未達顯著'})` } }
+          },
+          scales: {
+            x: { min: -4.5, max: 6.0, grid: { color: '#f1f5f9' }, ticks: { font: { size: 11 } } },
+            y: { grid: { display: false }, ticks: { font: { size: 11, weight: '600' } } }
+          }
+        }
+      });
+
+      // Chart B: ML Permutation Importance Top 12
+      const permLabels = [
+        '曠職天數', '申誡次數', '遲到早退次數', '所屬部門', '訓練測驗均分',
+        '嘉獎次數', '獎懲淨積分', '性別', '小功次數', '內部訓練時數', '底薪', '病假天數'
+      ];
+      const permVals = [8.00, 4.30, 3.93, 3.07, 2.93, 2.70, 2.33, 2.20, 1.40, 1.10, 0.87, 0.77];
+
+      new Chart(document.getElementById('mlPermChart'), {
+        type: 'bar',
+        data: {
+          labels: permLabels,
+          datasets: [{
+            label: '準確率平均下降幅度 (%)',
+            data: permVals,
+            backgroundColor: '#1e3a8a',
+            borderRadius: 4
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: c => `置換後準確率下降 ${c.parsed.x.toFixed(2)}%` } }
+          },
+          scales: {
+            x: { beginAtZero: true, max: 9.0, ticks: { callback: v => v + '%', font: { size: 11 } }, grid: { color: '#f1f5f9' } },
+            y: { grid: { display: false }, ticks: { font: { size: 11, weight: '600' } } }
+          }
+        }
+      });
+    }
+
+    // -------------------------------------------------------------------------
+    // 7. TAB 4: EMPLOYEE CASES TABLE & FILTERING
+    // -------------------------------------------------------------------------
+    let currentSegmentFilter = 'ALL';
+
+    function populateQuickEmpSelect() {
+      const sel = document.getElementById('quick-emp-select');
+      EMPLOYEE_CASES.forEach(e => {
+        const opt = document.createElement('option');
+        opt.value = e.id;
+        opt.textContent = `[${e.segment}] ${e.id} ${e.name} - ${e.dept} (實際:${e.actual} / 預測:${e.pred})`;
+        sel.appendChild(opt);
+      });
+    }
+
+    function filterCases(segment) {
+      currentSegmentFilter = segment;
+      document.querySelectorAll('.case-pill').forEach(btn => {
+        const isSelected = btn.getAttribute('data-cat') === segment;
+        if (isSelected) {
+          btn.className = 'case-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-white cursor-pointer shadow-xs';
+        } else {
+          const cat = btn.getAttribute('data-cat');
+          const styleMap = {
+            'ALL': 'bg-slate-100 text-slate-700 hover:bg-slate-200',
+            '高風險預警': 'bg-rose-50 text-rose-700 hover:bg-rose-100',
+            '高潛力觀察': 'bg-blue-50 text-blue-700 hover:bg-blue-100',
+            '落差檢視': 'bg-amber-50 text-amber-700 hover:bg-amber-100',
+            '預測一致': 'bg-teal-50 text-teal-700 hover:bg-teal-100'
+          };
+          btn.className = `case-pill px-3 py-1.5 rounded-xl text-xs font-semibold ${styleMap[cat]} cursor-pointer`;
+        }
+      });
+      renderCasesTable();
+    }
+
+    function gradeBadgeHTML(label) {
+      if (label.includes('優等')) return `<span class="px-2 py-0.5 rounded-md text-xs font-bold bg-emerald-100 text-emerald-800">${label}</span>`;
+      if (label.includes('甲等')) return `<span class="px-2 py-0.5 rounded-md text-xs font-bold bg-blue-100 text-blue-800">${label}</span>`;
+      if (label.includes('乙等')) return `<span class="px-2 py-0.5 rounded-md text-xs font-bold bg-amber-100 text-amber-800">${label}</span>`;
+      return `<span class="px-2 py-0.5 rounded-md text-xs font-bold bg-rose-100 text-rose-800">${label}</span>`;
+    }
+
+    function segmentBadgeHTML(seg) {
+      if (seg === '高風險預警') return `<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">⚠️ ${seg}</span>`;
+      if (seg === '高潛力觀察') return `<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">🌟 ${seg}</span>`;
+      if (seg === '落差檢視') return `<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">🔍 ${seg}</span>`;
+      return `<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-teal-50 text-teal-700 border border-teal-200">✅ ${seg}</span>`;
+    }
+
+    function renderCasesTable() {
+      const q = (document.getElementById('case-search').value || '').trim().toLowerCase();
+      const tbody = document.getElementById('cases-table-body');
+
+      const filtered = EMPLOYEE_CASES.filter(e => {
+        const matchSeg = currentSegmentFilter === 'ALL' || e.segment === currentSegmentFilter;
+        const matchQuery = !q ||
+          e.id.toLowerCase().includes(q) ||
+          e.name.toLowerCase().includes(q) ||
+          e.dept.toLowerCase().includes(q) ||
+          e.summary.toLowerCase().includes(q);
+        return matchSeg && matchQuery;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-400">查無符合條件的員工個案，請嘗試調整篩選條件。</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(e => `
+        <tr class="hover:bg-slate-50/90 transition">
+          <td class="py-3 px-3">
+            <div class="font-bold text-slate-900">${e.id} ${e.name}</div>
+            <div class="text-[11px] text-slate-400">${e.x[0] === 1 ? '男' : '女'}・${e.x[1]} 歲・年資 ${e.x[4]} 年</div>
+          </td>
+          <td class="py-3 px-3">
+            <div class="font-medium text-slate-800">${e.dept}</div>
+            <div class="text-[11px] text-slate-500">${e.x[3]} 職等・月薪 NT$${e.x[5].toLocaleString()}</div>
+          </td>
+          <td class="py-3 px-3 text-xs text-slate-600 max-w-xs">${e.summary}</td>
+          <td class="py-3 px-3 text-center">${gradeBadgeHTML(e.actual)}</td>
+          <td class="py-3 px-3 text-center">${gradeBadgeHTML(e.pred)}</td>
+          <td class="py-3 px-3 text-center">${segmentBadgeHTML(e.segment)}</td>
+          <td class="py-3 px-3 text-right">
+            <button onclick="loadCaseIntoSimulator('${e.id}')"
+              class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold bg-teal-600 text-white hover:bg-teal-700 shadow-xs transition cursor-pointer">
+              <span>🎛️ 載入模擬</span>
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function loadCaseIntoSimulator(empId) {
+      switchTab('simulator');
+      loadEmployeeById(empId);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // -------------------------------------------------------------------------
+    // 8. TAB NAVIGATION & TOAST UTILITY
+    // -------------------------------------------------------------------------
+    function switchTab(tabName) {
+      const tabs = ['simulator', 'benchmark', 'drivers', 'cases'];
+      tabs.forEach(t => {
+        const panel = document.getElementById(`panel-${t}`);
+        const btn = document.getElementById(`tab-btn-${t}`);
+        if (t === tabName) {
+          panel.classList.remove('hidden');
+          btn.className = 'tab-btn active-tab whitespace-nowrap px-4 py-3 rounded-t-xl text-xs sm:text-sm font-bold bg-slate-100 text-slate-900 shadow-sm border-t-2 border-teal-400 cursor-pointer';
+        } else {
+          panel.classList.add('hidden');
+          btn.className = 'tab-btn whitespace-nowrap px-4 py-3 rounded-t-xl text-xs sm:text-sm font-semibold bg-white/10 text-slate-200 hover:bg-white/20 hover:text-white cursor-pointer';
+        }
+      });
+
+      if (tabName === 'benchmark') {
+        updateBenchmarkChart();
+      } else if (tabName === 'drivers') {
+        initDriversSection();
+      }
+    }
+
+    let toastTimer = null;
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-msg').textContent = msg;
+      toast.classList.remove('opacity-0', 'translate-y-3');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-3');
+      }, 2800);
+    }
+
+    // -------------------------------------------------------------------------
+    // 9. INITIALIZATION ON WINDOW LOAD
+    // -------------------------------------------------------------------------
+    window.addEventListener('DOMContentLoaded', () => {
+      populateQuickEmpSelect();
+      renderBenchmarkTable();
+      renderCasesTable();
+      runPrediction();
+    });
+  </script>
+</body>
+</html>
